@@ -512,9 +512,8 @@ void logData() {
 //------------------------------------------------------------------------------
 void setup(void) {
 
-
-    int i = 0;
-    thisCtx.t = &t;
+  int i = 0;
+  thisCtx.t = &t;
    pinMode(DEBUG_BUTTON, INPUT);
   if (ERROR_LED_PIN >= 0) {
     pinMode(ERROR_LED_PIN, OUTPUT);
@@ -522,16 +521,11 @@ void setup(void) {
 
   Serial.begin(9600);
 
-
   // Wait for USB Serial
   while (!Serial) {
       delay(1);
     //SysCall::yield();
   }
-
-
-
-
 
   Serial.print(F("FreeMemory: "));
   Serial.println(System.freeMemory());
@@ -545,19 +539,18 @@ void setup(void) {
     sd.initErrorPrint();
     fatalBlink();
   }
-    pinMode(DEBUG_LED,OUTPUT);
-    digitalWrite(DEBUG_LED,LOW);
 
-    pinMode(D6,OUTPUT);
-    digitalWrite(D6,LOW);
-    delay(100);
-    t.begin();
-    t.gpsOn();
+  pinMode(DEBUG_LED,OUTPUT);
+  digitalWrite(DEBUG_LED,LOW);
 
-            /* Asset tracker stuff */
+  pinMode(D6,OUTPUT);
+  digitalWrite(D6,LOW);
+  delay(100);
+  t.begin();
+  t.gpsOn();
+
+  /* Asset tracker stuff */
   // Sets up all the necessary AssetTracker bits
-
-
 
   for (i= 0; i < GPS_FIX_ATTEMPTS; i++)
   {
@@ -565,10 +558,9 @@ void setup(void) {
     if(t.gpsFix())
         break;
   }
+
   flashDebugLed(&thisCtx, 2, 500);
   digitalWrite(DEBUG_LED,HIGH);
-
-
 }
 
 //------------------------------------------------------------------------------
