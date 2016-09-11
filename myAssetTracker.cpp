@@ -67,6 +67,10 @@ void AssetTracker::gpsOff(){
     digitalWrite(D6,HIGH);
 }
 
+void AssetTracker::accOff(){
+  return; /* As of today this is a noop */
+}
+
 char* AssetTracker::peekNMEA(){
     return gps.peekNMEA();
 }

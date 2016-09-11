@@ -15,6 +15,7 @@ class AssetTracker {
     updateGPS(void),
     gpsOn(void),
     gpsOff(void);
+    accOff(void);
   int
     readX(void),
     readY(void),
