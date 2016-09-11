@@ -270,7 +270,7 @@ void dumpData() {
 // log data
 // max number of blocks to erase per erase call
 uint32_t const ERASE_SIZE = 262144L;
-void logData() {
+void logData(context * ctx) {
   bool saveFile = FALSE;
   bool errorSig = FALSE;
   uint32_t bgnBlock, endBlock;

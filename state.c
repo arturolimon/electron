@@ -120,7 +120,7 @@ void alert2St(context * ctx)
 *******************************************************************************/
 void recordSt(context * ctx)
 {
-  return; // NOOP for the time being TODO: do something funny here
+  logData(context * ctx);
 }
 
 /*******************************************************************************
