@@ -68,7 +68,11 @@ void AssetTracker::gpsOff(){
 }
 
 void AssetTracker::accOff(){
-  return; /* As of today this is a noop */
+  /* As of today this is a noop */
+}
+
+void AssetTracker::accOn(){
+  /* As of today this is a noop */
 }
 
 char* AssetTracker::peekNMEA(){

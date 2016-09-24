@@ -1,45 +1,53 @@
-#define  SLEEP_ST 0
-#define ALERT1_ST 1
-#define ALERT2_ST 2
-#define  SETUP_ST 3
-#define RECORD_ST 4
-#define   SHUT_ST 5
+#include "state.h"
+#include "myData.h"
+#include "log.h"
 
 /*******************************************************************************
-  SLEEP STATE DEFINES
+  NAME
+    gotoSleep- go to sleep
+  DESCRIPTION
+    Does the appropriate setup before sending electron to sleep.
+    Shutting down whatever is needed to reduce power consumption.
 *******************************************************************************/
-#define SLPTIM_SLEEPST 30                  /* sleep time for the sleep state */
-#define ACTPER_SLEEPST 1000     /* accel sampling period for the sleep state */
-#define ACTTHD_SLEEPST 10000    /* accel power threshold for the sleep state */
-#define CNTTHD_SLEEPST 10   /* number of activity events for the sleep state */
-
-/*******************************************************************************
-  ALERT1 STATE DEFINES
-*******************************************************************************/
-#define SLPTIM_ALER1ST 30                  /* sleep time for the alert1 state */
-#define ACTPER_ALER1ST 1000     /* accel sampling period for the alert1 state */
-#define ACTTHD_ALER1ST 10000    /* accel power threshold for the alert1 state */
-#define CNTTHD_ALER1ST 10   /* number of activity events for the alert1 state */
-
-/*******************************************************************************
-  ALERT2 STATE DEFINES
-*******************************************************************************/
-#define SLPTIM_ALER2ST 30                  /* sleep time for the alert2 state */
-#define ACTPER_ALER2ST 1000     /* accel sampling period for the alert2 state */
-#define ACTTHD_ALER2ST 10000    /* accel power threshold for the alert2 state */
-#define CNTTHD_ALER2ST 10   /* number of activity events for the alert2 state */
-
-typedef state unsigned char;
-
-struct context_st
+void gotoSleep(context * ctx, unsigned int period)
 {
-  state thisState;
-  state nxtState;
-  unsigned int actCnt;
-  AssetTracker * t;
-};
 
-typedef context_st context;
+}
+/*******************************************************************************
+  NAME
+    accAct - accelerometer activity check
+  DESCRIPTION
+    This function checks for accelerometer activity and updates the appropriate
+    counters.
+  NOTES
+    Power spectral density will be calculated and a threshold-based approach
+    is used to determine if there is activity or not.
+  RETURNS
+    True when it is safe to say that there is accelerometer activity
+*******************************************************************************/
+bool accAct(context * ctx, unsigned int period, unsigned int threshold)
+{
+  return TRUE;
+}
+
+/*******************************************************************************
+  NAME
+    gpsAct - GPS activity check
+  DESCRIPTION
+    This function checks for GPS activity and updates the appropriate
+    counters.
+  NOTES
+    Since it is not a good idea to use the GPS coordinates to determine if
+    there is activity or not, GPS speed will be used instead. A threshold is set
+    above potential noise and whatever goes above this limit is defined as
+    movement and therefore GPS activity.
+  RETURNS
+    True when it is safe to say that there is GPS activity.
+*******************************************************************************/
+bool gpsAct(context * ctx, unsigned int threshold)
+{
+  return TRUE;
+}
 
 /*******************************************************************************
   NAME
@@ -51,17 +59,17 @@ void sleepSt(context * ctx)
 {
   ctx->nxtState = ctx->thisState;
 
-  if (accAct(ACTPER_SLEEPST, ACTTHD_SLEEPST))
+  if (accAct(ctx, ACTPER_SLEEPST, ACTTHD_SLEEPST))
   {
     ctx->actCnt++;
     if (ctx->actCnt >= CNTTHD_SLEEPST)
     {
-      ctx->nxtState = ALET1_ST;
+      ctx->nxtState = ALERT1_ST;
       return;
     }
   }
 
-  gotoSleep(SLPTIM_SLEEPST);
+  gotoSleep(ctx, SLPTIM_SLEEPST);
 }
 
 /*******************************************************************************
@@ -75,17 +83,17 @@ void alert1St(context * ctx)
 {
   ctx->nxtState = ctx->thisState;
 
-  if (accAct(ACTPER_ALER1ST, ACTTHD_ALER1ST))
+  if (accAct(ctx, ACTPER_ALER1ST, ACTTHD_ALER1ST))
   {
     ctx->actCnt++;
     if (ctx->actCnt >= CNTTHD_ALER1ST)
     {
-      ctx->nxtState = ALET2_ST;
+      ctx->nxtState = ALERT2_ST;
       return;
     }
   }
 
-  gotoSleep(SLPTIM_ALER1ST);
+  gotoSleep(ctx, SLPTIM_ALER1ST);
 }
 
 /*******************************************************************************
@@ -99,7 +107,7 @@ void alert2St(context * ctx)
 {
   ctx->nxtState = ctx->thisState;
 
-  if (gpsAct(ACTTHD_ALER2ST))
+  if (gpsAct(ctx, ACTTHD_ALER2ST))
   {
     ctx->actCnt++;
     if (ctx->actCnt >= CNTTHD_ALER2ST)
@@ -109,7 +117,20 @@ void alert2St(context * ctx)
     }
   }
 
-  gotoSleep(SLPTIM_ALER2ST);
+  gotoSleep(ctx, SLPTIM_ALER2ST);
+}
+
+/*******************************************************************************
+  NAME
+    setupSt - setup state
+  DESCRIPTION
+    Function for the setup state in the main state machine
+  NOTES
+    Preparation stage for the recording state. Whatever needs to be done
+    before recording starts should be done here.
+*******************************************************************************/
+void setupSt(context * ctx)
+{
 }
 
 /*******************************************************************************
@@ -120,7 +141,7 @@ void alert2St(context * ctx)
 *******************************************************************************/
 void recordSt(context * ctx)
 {
-  logData(context * ctx);
+  logData(ctx);
 }
 
 /*******************************************************************************
@@ -221,7 +242,7 @@ void runState(context * ctx)
     case(SETUP_ST):
       setupSt(ctx);
       break;
-    case(REC_ST):
+    case(RECORD_ST):
       recordSt(ctx);
       break;
     case(SHUT_ST):

@@ -3,7 +3,6 @@
 #include "myAssetTracker.h"
 #include "SdFat.h"
 
-
 #define GPS_RATE (unsigned long) 100
 #define GPS_FIX_ATTEMPTS    60
 #define GPS_BACKOFF         1000
@@ -14,17 +13,24 @@
 #define LAT_OFFSET          (float) 2000
 #define LON_OFFSET          (float) 10300
 
-
 extern unsigned long startTimeStamp;
 
-struct context_st {
-    AssetTracker  * t;
+typedef unsigned char state;
+
+struct context_st
+{
+  state         thisState;
+  state         nxtState;
+  unsigned int  actCnt;
+  AssetTracker *t;
+  FuelGauge    *fuel;
+  SdFat        *sd;
 };
 
 typedef struct context_st context;
 
-
-struct data_st {
+struct data_st
+{
   unsigned long time;
   int accelX;
   int accelY;

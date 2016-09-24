@@ -1,44 +1,12 @@
-#include "myAssetTracker.h"
-#include "myData.h"
+#include "log.h"
 
-SYSTEM_MODE(MANUAL);
-
-bool start_recording    = FALSE;
+// TODO: Put this on a place that actually makes sense
 // Set useSharedSpi true for use of an SPI sensor.
 const bool useSharedSpi = true;
 
-// Print data header.
-void printHeader(Print* pr) {
-  //pr->println(F("time,A0,A1,A6,A7"));
-  pr->println(F(""));
-}
-
-//==============================================================================
-// Start of configuration constants.
-//==============================================================================
-//Interval between data records in microseconds.
-const uint32_t LOG_INTERVAL_USEC = 2000;
-//------------------------------------------------------------------------------
-// Pin definitions.
-//
-// SD chip select pin.
-const uint8_t SD_CS_PIN = D5;
-//
-// Digital pin to indicate an error, set to -1 if not used.
-// The led blinks for fatal errors. The led goes on solid for SD write
-// overrun errors and logging continues.
-const int8_t ERROR_LED_PIN = -1;
-//------------------------------------------------------------------------------
-// File definitions.
-//
-// Maximum file size in blocks.
-// The program creates a contiguous file with FILE_BLOCK_COUNT 512 byte blocks.
-// This file is flash erased using special SD commands.  The file will be
-// truncated if logging is stopped early.
-const uint32_t FILE_BLOCK_COUNT = 256000;
-
-// log file base name.  Must be six characters or less.
-#define FILE_BASE_NAME "data"
+/******************************************************************************
+                                PRIVATE DEFINITIONS
+******************************************************************************/
 //------------------------------------------------------------------------------
 // Buffer definitions.
 //
@@ -47,52 +15,56 @@ const uint32_t FILE_BLOCK_COUNT = 256000;
 //
 #ifndef RAMEND
 // Assume ARM. Use total of nine 512 byte buffers.
-const uint8_t BUFFER_BLOCK_COUNT = 8;
+#define BUFFER_BLOCK_COUNT ((uint8_t) 8)
 //
 #elif RAMEND < 0X8FF
 #error Too little SRAM
 //
 #elif RAMEND < 0X10FF
 // Use total of two 512 byte buffers.
-const uint8_t BUFFER_BLOCK_COUNT = 1;
+#define BUFFER_BLOCK_COUNT ((uint8_t) 1)
 //
 #elif RAMEND < 0X20FF
 // Use total of five 512 byte buffers.
-const uint8_t BUFFER_BLOCK_COUNT = 4;
+#define BUFFER_BLOCK_COUNT ((uint8_t) 4)
 //
 #else  // RAMEND
 // Use total of 13 512 byte buffers.
-const uint8_t BUFFER_BLOCK_COUNT = 12;
+#define BUFFER_BLOCK_COUNT ((uint8_t) 12)
 #endif  // RAMEND
-//==============================================================================
-// End of configuration constants.
-//==============================================================================
+
 // Temporary log file.  Will be deleted if a reset or power failure occurs.
 #define TMP_FILE_NAME "tmp_log.bin"
 
 // Size of file base name.  Must not be larger than six.
-const uint8_t BASE_NAME_SIZE = sizeof(FILE_BASE_NAME) - 1;
+#define BASE_NAME_SIZE ((uint8_t)(sizeof(FILE_BASE_NAME) - 1))
 
-// Secondary SPI with DMA
-// SCK => D4, MISO => D3, MOSI => D2, SS => D1
-SdFat sd(1);
+//Interval between data records in microseconds.
+#define LOG_INTERVAL_USEC ((uint32_t)2000)
 
-// Creating an AssetTracker named 't' for us to reference
-AssetTracker t = AssetTracker(&Serial);
-context thisCtx;
+//------------------------------------------------------------------------------
+// File definitions.
+//
+// Maximum file size in blocks.
+// The program creates a contiguous file with FILE_BLOCK_COUNT 512 byte blocks.
+// This file is flash erased using special SD commands.  The file will be
+// truncated if logging is stopped early.
+#define FILE_BLOCK_COUNT ((uint32_t) 256000)
 
-// A FuelGauge named 'fuel' for checking on the battery state
-FuelGauge fuel;
+// log file base name.  Must be six characters or less.
+#define FILE_BASE_NAME "data"
 
-SdBaseFile binFile;
 
-char binName[13] = FILE_BASE_NAME "00.bin";
+// max number of blocks to erase per erase call
+#define ERASE_SIZE ((uint32_t) 262144L)
 
 // Number of data records in a block.
-const uint16_t DATA_DIM = (512 - 4)/sizeof(data_t);
+#define  DATA_DIM ((uint16_t)((512 - 4)/sizeof(data_t)))
 
 //Compute fill so block size is 512 bytes.  FILL_DIM may be zero.
-const uint16_t FILL_DIM = 512 - 4 - DATA_DIM*sizeof(data_t);
+#define  FILL_DIM ((uint16_t)(512 - 4 - DATA_DIM*sizeof(data_t)))
+
+char binName[13] = FILE_BASE_NAME "00.bin";
 
 struct block_t
 {
@@ -112,11 +84,21 @@ block_t* fullQueue[QUEUE_DIM];
 uint8_t fullHead;
 uint8_t fullTail;
 
+SdBaseFile binFile; //TODO: should this go in the global ctx?
+
+// Print data header.
+void printHeader(Print* pr)
+{
+  //pr->println(F("time,A0,A1,A6,A7"));
+  pr->println(F(""));
+}
+
 // Advance queue index.
 inline uint8_t queueNext(uint8_t ht)
 {
   return ht < (QUEUE_DIM - 1) ? ht + 1 : 0;
 }
+
 //==============================================================================
 void fatalBlink()
 {
@@ -132,14 +114,14 @@ void fatalBlink()
   }
 }
 //------------------------------------------------------------------------------
-void error(const char* msg)
+void error(context * ctx, const char* msg)
 {
-  sd.errorPrint(msg);
+  ctx->sd->errorPrint(msg);
   fatalBlink();
 }
 //==============================================================================
 // Convert binary file to csv file.
-void binaryToCsv()
+void binaryToCsv(context *ctx)
 {
   uint8_t lastPct = 0;
   block_t block;
@@ -162,7 +144,7 @@ void binaryToCsv()
   strcpy(&csvName[BASE_NAME_SIZE + 3], "csv");
 
   if (!csvFile.open(csvName, O_WRITE | O_CREAT | O_TRUNC))
-    error("open csvFile failed");
+    error(ctx,"open csvFile failed");
 
   Serial.println();
   Serial.print(F("Writing: "));
@@ -216,7 +198,7 @@ void binaryToCsv()
 }
 //------------------------------------------------------------------------------
 // read data file and check for overruns
-void checkOverrun() {
+void checkOverrun(context * ctx) {
   bool headerPrinted = false;
   block_t block;
   uint32_t bgnBlock, endBlock;
@@ -230,7 +212,7 @@ void checkOverrun() {
   }
 
   if (!binFile.contiguousRange(&bgnBlock, &endBlock))
-    error("contiguousRange failed");
+    error(ctx, "contiguousRange failed");
 
   binFile.rewind();
   Serial.println();
@@ -300,10 +282,6 @@ void dumpData()
   }
   Serial.println(F("Done"));
 }
-//------------------------------------------------------------------------------
-// log data
-// max number of blocks to erase per erase call
-uint32_t const ERASE_SIZE = 262144L;
 
 void logData(context * ctx)
 {
@@ -341,9 +319,9 @@ void logData(context * ctx)
 
   // Find unused file name.
   if (BASE_NAME_SIZE > 6)
-    error("FILE_BASE_NAME too long");
+    error(ctx, "FILE_BASE_NAME too long");
 
-  while (sd.exists(binName))
+  while (ctx->sd->exists(binName))
   {
     if (binName[BASE_NAME_SIZE + 1] != '9')
     {
@@ -354,34 +332,34 @@ void logData(context * ctx)
       binName[BASE_NAME_SIZE + 1] = '0';
 
       if (binName[BASE_NAME_SIZE] == '9')
-        error("Can't create file name");
+        error(ctx, "Can't create file name");
 
       binName[BASE_NAME_SIZE]++;
     }
   }
   // Delete old tmp file.
-  if (sd.exists(TMP_FILE_NAME))
+  if (ctx->sd->exists(TMP_FILE_NAME))
   {
     Serial.println(F("Deleting tmp file"));
-    if (!sd.remove(TMP_FILE_NAME))
-      error("Can't remove tmp file");
+    if (!ctx->sd->remove(TMP_FILE_NAME))
+      error(ctx, "Can't remove tmp file");
   }
   // Create new file.
   Serial.println(F("Creating new file"));
   binFile.close();
 
-  if (!binFile.createContiguous(sd.vwd(), TMP_FILE_NAME, 512 * FILE_BLOCK_COUNT))
-    error("createContiguous failed");
+  if (!binFile.createContiguous(ctx->sd->vwd(), TMP_FILE_NAME, 512 * FILE_BLOCK_COUNT))
+    error(ctx, "createContiguous failed");
 
   // Get the address of the file on the SD.
   if (!binFile.contiguousRange(&bgnBlock, &endBlock))
-    error("contiguousRange failed");
+    error(ctx,"contiguousRange failed");
 
   // Use SdFat's internal buffer.
-  cache = (uint8_t*)sd.vol()->cacheClear();
+  cache = (uint8_t*)ctx->sd->vol()->cacheClear();
 
   if (cache == 0)
-    error("cacheClear failed");
+    error(ctx, "cacheClear failed");
 
   // Flash erase all data in the file.
   Serial.println(F("Erasing all data"));
@@ -394,19 +372,19 @@ void logData(context * ctx)
     {
       endErase = endBlock;
     }
-    if (!sd.card()->erase(bgnErase, endErase))
+    if (!ctx->sd->card()->erase(bgnErase, endErase))
     {
-      error("erase failed");
+      error(ctx,"erase failed");
     }
     bgnErase = endErase + 1;
   }
   // Start a multiple block write.
-  if (!sd.card()->writeStart(bgnBlock, FILE_BLOCK_COUNT))
-    error("writeBegin failed");
+  if (!ctx->sd->card()->writeStart(bgnBlock, FILE_BLOCK_COUNT))
+    error(ctx, "writeBegin failed");
 
   // Set chip select high if other devices use SPI.
   if (useSharedSpi)
-    sd.card()->chipSelectHigh();
+    ctx->sd->card()->chipSelectHigh();
 
   // Initialize queues.
   emptyHead = emptyTail = 0;
@@ -423,7 +401,7 @@ void logData(context * ctx)
     emptyHead = queueNext(emptyHead);
   }
 
-  flashDebugLed(&thisCtx, 2,500);
+  flashDebugLed(ctx, 2,500);
   Serial.println(F("Logging - Press button to stop"));
 
   // Wait for Serial Idle.
@@ -445,7 +423,7 @@ void logData(context * ctx)
     logTime += LOG_INTERVAL_USEC;
 
     //if (Serial.available()) {
-    if (IS_DEBUG_PRESSED(&thisCtx))
+    if (IS_DEBUG_PRESSED(ctx))
     {
       closeFile = true;
       saveFile  = true;
@@ -475,9 +453,9 @@ void logData(context * ctx)
       do
       {
           delayMicroseconds(1);
-          t.updateGPS();
+          ctx->t->updateGPS();
       }
-      while(logTime>micros());
+      while(logTime > micros());
       /*
       int32_t usec = logTime - micros();
       if (usec < 0) {
@@ -501,7 +479,7 @@ void logData(context * ctx)
       }
       else
       {
-        acquireData(&curBlock->data[curBlock->count++],&t);
+        acquireData(&curBlock->data[curBlock->count++],ctx->t);
 
         if (curBlock->count == DATA_DIM)
         {
@@ -516,11 +494,11 @@ void logData(context * ctx)
       // Exit loop if done.
       if (closeFile)
       {
-        flashDebugLed(&thisCtx, 2, 500);
+        flashDebugLed(ctx, 2, 500);
         break;
       }
     }
-    else if (!sd.card()->isBusy())
+    else if (!ctx->sd->card()->isBusy())
     {
       // Get address of block to write.
       pBlock = fullQueue[fullTail];
@@ -528,8 +506,8 @@ void logData(context * ctx)
       // Write block to SD.
       usec = micros();
 
-      if (!sd.card()->writeData((uint8_t*)pBlock))
-        error("write data failed");
+      if (!ctx->sd->card()->writeData((uint8_t*)pBlock))
+        error(ctx, "write data failed");
 
       usec = micros() - usec;
       t1 = millis();
@@ -554,9 +532,9 @@ void logData(context * ctx)
         break; // File full so stop
     }
   }
-  if (!sd.card()->writeStop())
+  if (!ctx->sd->card()->writeStop())
   {
-    error("writeStop failed");
+    error(ctx, "writeStop failed");
     errorSig = TRUE;
   }
   // Truncate file if recording stopped early.
@@ -565,13 +543,13 @@ void logData(context * ctx)
     Serial.println(F("Truncating file"));
     if (!binFile.truncate(512L * bn))
     {
-      error("Can't truncate file");
+      error(ctx, "Can't truncate file");
       errorSig = TRUE;
     }
   }
-  if (!binFile.rename(sd.vwd(), binName))
+  if (!binFile.rename(ctx->sd->vwd(), binName))
   {
-    error("Can't rename file");
+    error(ctx, "Can't rename file");
      errorSig = TRUE;
   }
 
@@ -592,8 +570,21 @@ void logData(context * ctx)
   Serial.println(overrunTotal);
 
   if (saveFile && !errorSig)
-    binaryToCsv();
+    binaryToCsv(ctx);
 
-  flashDebugLed(&thisCtx, 3, 500);
+  flashDebugLed(ctx, 3, 500);
   Serial.println(F("Done"));
+}
+
+void validateMemory(context * ctx)
+{
+  Serial.print(F("FreeMemory: "));
+  Serial.println(System.freeMemory());
+  Serial.print(F("Records/block: "));
+  Serial.println(DATA_DIM);
+
+  if (sizeof(block_t) != 512)
+  {
+    error(ctx, "Invalid block size");
+  }
 }
