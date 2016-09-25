@@ -33,12 +33,11 @@ bool accAct(context * ctx, unsigned int period, unsigned int duration,
 {
   unsigned int i;
   unsigned int nTimes = duration / period;
-  unsigned int * array = malloc(sizeof(unsigned int) * nTimes);
+  unsigned int * array = (unsigned int *)malloc(sizeof(unsigned int) * nTimes);
+  unsigned int average = 0;
 
   for (i = 0; i < nTimes; i++)
-  {
     array[i] = ctx->t->readXYZmagnitude();
-  }
 
   // At this point in time we have all we need to calculate power spectral dens
 

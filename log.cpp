@@ -479,7 +479,7 @@ void logData(context * ctx)
       }
       else
       {
-        acquireData(&curBlock->data[curBlock->count++],ctx->t);
+        acquireData(ctx, &curBlock->data[curBlock->count++]);
 
         if (curBlock->count == DATA_DIM)
         {

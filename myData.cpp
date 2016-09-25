@@ -92,7 +92,7 @@ void printData(Print* pr, data_t* data) {
   DESCRIPTION
     Calculates average power of given array
 *******************************************************************************/
-void averagePower(context * ctx, unsigned int *array, size_t length)
+unsigned int averagePower(context * ctx, unsigned int *array, size_t length)
 {
   unsigned int accu = 0;
   unsigned int    i;

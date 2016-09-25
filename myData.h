@@ -54,6 +54,6 @@ void mydelay(context * self, unsigned int period);
   DESCRIPTION
     Calculates average power of given array
 *******************************************************************************/
-void averagePower(context * ctx, unsigned int *array, size_t length);
+unsigned int averagePower(context * ctx, unsigned int *array, size_t length);
 
 #endif
