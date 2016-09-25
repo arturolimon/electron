@@ -6,6 +6,7 @@
 
 #define mySerial Serial1
 #define eSerial  Serial
+
 Adafruit_GPS gps(&mySerial,&eSerial);
 //Adafruit_GPS gps = Adafruit_GPS();
 //Adafruit_LIS3DH accel = Adafruit_LIS3DH(A2, A5, A4, A3);
