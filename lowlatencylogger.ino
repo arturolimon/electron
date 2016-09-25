@@ -14,7 +14,7 @@ bool start_recording  = FALSE;
 /*******************************************************************************
                                 GLOBAL VARIABLES
 *******************************************************************************/
-// Creating an AssetTracker named 't' for us to reference
+// Creating an AssetTracker named 'globalTracker' for us to reference
 AssetTracker globalTracker = AssetTracker(&Serial);
 
 // A FuelGauge named 'fuel' for checking on the battery state
