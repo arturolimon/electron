@@ -43,9 +43,17 @@ struct data_st
 
 typedef struct data_st data_t;
 bool IS_DEBUG_PRESSED(context * self);
-void acquireData(data_t * data, AssetTracker * t);
+void acquireData(context * ctx, data_t * data);
 void printData(Print* pr, data_t* data);
 void flashDebugLed(context * self, unsigned int ntimes, unsigned int period);
 void mydelay(context * self, unsigned int period);
+
+/*******************************************************************************
+  NAME
+    averagePower - Average power calculation
+  DESCRIPTION
+    Calculates average power of given array
+*******************************************************************************/
+void averagePower(context * ctx, unsigned int *array, size_t length);
 
 #endif

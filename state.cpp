@@ -8,10 +8,13 @@
   DESCRIPTION
     Does the appropriate setup before sending electron to sleep.
     Shutting down whatever is needed to reduce power consumption.
+  NOTES
+    Period is in seconds
 *******************************************************************************/
 void gotoSleep(context * ctx, unsigned int period)
 {
-
+    // TODO: Figure out which variables to move to the backup SRAM
+    // System.sleep(SLEEP_MODE_DEEP, period);
 }
 /*******************************************************************************
   NAME
@@ -25,9 +28,26 @@ void gotoSleep(context * ctx, unsigned int period)
   RETURNS
     True when it is safe to say that there is accelerometer activity
 *******************************************************************************/
-bool accAct(context * ctx, unsigned int period, unsigned int threshold)
+bool accAct(context * ctx, unsigned int period, unsigned int duration,
+            unsigned int threshold)
 {
-  return TRUE;
+  unsigned int i;
+  unsigned int nTimes = duration / period;
+  unsigned int * array = malloc(sizeof(unsigned int) * nTimes);
+
+  for (i = 0; i < nTimes; i++)
+  {
+    array[i] = ctx->t->readXYZmagnitude();
+  }
+
+  // At this point in time we have all we need to calculate power spectral dens
+
+  average = averagePower(ctx, array, nTimes);
+
+  // Cleanup
+  free(array);
+
+  return (average >= threshold);
 }
 
 /*******************************************************************************

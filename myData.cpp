@@ -15,21 +15,21 @@ bool IS_DEBUG_PRESSED(context * self)
     return true;
 }
 // Acquire a data record.
-void acquireData(data_t * data, AssetTracker * t) {
+void acquireData(context * ctx, data_t * data) {
 
     data->time = micros() - startTimeStamp;
 
-    data->accelX = t->readX();
-    data->accelY = t->readY();
-    data->accelZ = t->readZ();
+    data->accelX = ctx->t->readX();
+    data->accelY = ctx->t->readY();
+    data->accelZ = ctx->t->readZ();
 
     //t->updateGPS();
 
-    if(t->gpsFix())
+    if(ctx->t->gpsFix())
     {
-        data->lat = t->readLat();
-        data->lon = t->readLon();
-        data->vel = t->readVel();
+        data->lat = ctx->t->readLat();
+        data->lon = ctx->t->readLon();
+        data->vel = ctx->t->readVel();
     }
     else
     {
@@ -84,4 +84,21 @@ void printData(Print* pr, data_t* data) {
   pr->println();
 
 
+}
+
+/*******************************************************************************
+  NAME
+    averagePower - Average power calculation
+  DESCRIPTION
+    Calculates average power of given array
+*******************************************************************************/
+void averagePower(context * ctx, unsigned int *array, size_t length)
+{
+  unsigned int accu = 0;
+  unsigned int    i;
+
+  for (i = 0; i < length; i++)
+    accu += array[i] * array[i];
+
+  return accu/length;
 }
