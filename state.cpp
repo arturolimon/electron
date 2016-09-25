@@ -25,6 +25,7 @@ void gotoSleep(context * ctx, unsigned int period)
   NOTES
     Power spectral density will be calculated and a threshold-based approach
     is used to determine if there is activity or not.
+    Period and duration in us.
   RETURNS
     True when it is safe to say that there is accelerometer activity
 *******************************************************************************/
@@ -37,7 +38,10 @@ bool accAct(context * ctx, unsigned int period, unsigned int duration,
   unsigned int average = 0;
 
   for (i = 0; i < nTimes; i++)
+  {
     array[i] = ctx->t->readXYZmagnitude();
+    delay(period);
+  }
 
   // At this point in time we have all we need to calculate power spectral dens
 
@@ -60,12 +64,14 @@ bool accAct(context * ctx, unsigned int period, unsigned int duration,
     there is activity or not, GPS speed will be used instead. A threshold is set
     above potential noise and whatever goes above this limit is defined as
     movement and therefore GPS activity.
+    A no fix would be interpreted as no gps activity since we wouldn't want
+    to be wasting energy when there is no GPS signal (fix).
   RETURNS
     True when it is safe to say that there is GPS activity.
 *******************************************************************************/
 bool gpsAct(context * ctx, unsigned int threshold)
 {
-  return TRUE;
+  return (ctx->t->gpsFix() && (ctx->t->readVel() >= threshold));
 }
 
 /*******************************************************************************
