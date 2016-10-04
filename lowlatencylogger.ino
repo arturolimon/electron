@@ -8,8 +8,6 @@
 bool start_recording  = FALSE;
 
 
-// SD chip select pin.
-#define SD_CS_PIN (uint8_t) D5
 
 /*******************************************************************************
                                 GLOBAL VARIABLES
@@ -24,7 +22,15 @@ FuelGauge fuel;
 // SCK => D4, MISO => D3, MOSI => D2, SS => D1
 SdFat sd(1);
 
-context thisCtx;
+retained context thisCtx =
+{
+  .thisState = IDLE_ST,
+  .nxtState = IDLE_ST,
+  .actCnt    = 0,
+  .t         = (AssetTracker *) 0,
+  .fuel      = (FuelGauge *) 0,
+  .sd        = (SdFat *) 0
+};
 
 //------------------------------------------------------------------------------
 void setup(void)
@@ -35,9 +41,6 @@ void setup(void)
   thisCtx.t         = &globalTracker;
   thisCtx.fuel      = &fuel;
   thisCtx.sd        = &sd;
-  thisCtx.thisState = SLEEP_ST;
-  thisCtx.nxtState  = SLEEP_ST;
-  thisCtx.actCnt    = 0;
 
   pinMode(DEBUG_BUTTON, INPUT);
 
@@ -55,6 +58,7 @@ void setup(void)
     //SysCall::yield();
   }
 
+  /* moved to setupSt
   // added by me. Should print memory and error out if size is not 512
   validateMemory(&thisCtx);
 
@@ -64,19 +68,26 @@ void setup(void)
     thisCtx.sd->initErrorPrint();
     fatalBlink();
   }
+  */
 
   pinMode(DEBUG_LED,OUTPUT);
   digitalWrite(DEBUG_LED,LOW);
 
+  /* moved to accOn gpsOn etc
   pinMode(D6,OUTPUT);
   digitalWrite(D6,LOW);
   delay(100);
   thisCtx.t->begin();
   thisCtx.t->gpsOn();
+  */
+  thisCtx.t->gpsPowerWellOn();
+  thisCtx.t->accOn();
+  thisCtx.t->gpsOn();
 
   /* Asset tracker stuff */
   // Sets up all the necessary AssetTracker bits
 
+  /* TODO: Need to move this to gpsOn maybe */
   for (i= 0; i < GPS_FIX_ATTEMPTS; i++)
   {
     mydelay(&thisCtx, GPS_BACKOFF);
