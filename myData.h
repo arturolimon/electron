@@ -3,6 +3,9 @@
 #include "myAssetTracker.h"
 #include "SdFat.h"
 
+// SD chip select pin.
+#define SD_CS_PIN (uint8_t) D5
+
 #define GPS_RATE (unsigned long) 100
 #define GPS_FIX_ATTEMPTS    60
 #define GPS_BACKOFF         1000
