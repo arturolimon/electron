@@ -17,6 +17,7 @@ AssetTracker::AssetTracker(Stream * eout){
 }
 
 void AssetTracker::begin(){
+    /*
     accel.begin(LIS3DH_DEFAULT_ADDRESS);
 
     // Default to 5kHz low-power sampling
@@ -27,6 +28,7 @@ void AssetTracker::begin(){
 
     // Turn on the GPS module
     // gpsOn();
+    */
 }
 
 float AssetTracker::readLat(){
@@ -44,6 +46,18 @@ float AssetTracker::readVel(){
 String AssetTracker::readLatLon(){
     String latLon = String::format("%f,%f",gps.latitudeDegrees,gps.longitudeDegrees);
     return latLon;
+}
+void AssetTracker::gpsPowerWellOn()
+{
+  pinMode(D6,OUTPUT);
+  digitalWrite(D6,LOW);
+  delay(100);
+}
+void AssetTracker::gpsPowerWellOff()
+{
+  pinMode(D6,OUTPUT);
+  digitalWrite(D6,HIGH);
+  delay(100);
 }
 
 void AssetTracker::gpsOn(){
@@ -73,7 +87,13 @@ void AssetTracker::accOff(){
 }
 
 void AssetTracker::accOn(){
-  /* As of today this is a noop */
+    accel.begin(LIS3DH_DEFAULT_ADDRESS);
+
+    // Default to 5kHz low-power sampling
+    accel.setDataRate(LIS3DH_DATARATE_LOWPOWER_5KHZ);
+
+    // Default to 4 gravities range
+    accel.setRange(LIS3DH_RANGE_4_G);
 }
 
 char* AssetTracker::peekNMEA(){

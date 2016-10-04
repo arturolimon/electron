@@ -13,6 +13,8 @@ class AssetTracker {
   void
     begin(void),
     updateGPS(void),
+    gpsPowerWellOn(void),
+    gpsPowerWellOff(void),
     gpsOn(void),
     gpsOff(void),
     accOn(void),
