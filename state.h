@@ -4,7 +4,7 @@
 /*******************************************************************************
   STATE DEFINES
 *******************************************************************************/
-#define  SLEEP_ST 0
+#define  IDLE_ST 0
 #define ALERT1_ST 1
 #define ALERT2_ST 2
 #define  SETUP_ST 3
@@ -12,12 +12,12 @@
 #define   SHUT_ST 5
 
 /*******************************************************************************
-  SLEEP STATE DEFINES
+  IDLE STATE DEFINES
 *******************************************************************************/
-#define SLPTIM_SLEEPST 30                  /* sleep time for the sleep state */
-#define ACTPER_SLEEPST 1000     /* accel sampling period for the sleep state */
-#define ACTTHD_SLEEPST 10000    /* accel power threshold for the sleep state */
-#define CNTTHD_SLEEPST 10   /* number of activity events for the sleep state */
+#define SLPTIM_IDLEST 30                  /* sleep time for the sleep state */
+#define ACTPER_IDLEST 1000     /* accel sampling period for the sleep state */
+#define ACTTHD_IDLEST 10000    /* accel power threshold for the sleep state */
+#define CNTTHD_IDLEST 10   /* number of activity events for the sleep state */
 
 /*******************************************************************************
   ALERT1 STATE DEFINES

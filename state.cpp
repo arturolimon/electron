@@ -13,9 +13,17 @@
 *******************************************************************************/
 void gotoSleep(context * ctx, unsigned int period)
 {
-    // TODO: Figure out which variables to move to the backup SRAM
-    // System.sleep(SLEEP_MODE_DEEP, period);
+    /* Make sure AssetTracker, FuelGauge SdFat are not visible after a power
+    cycle */
+    ctx->t    = (AssetTracker *) 0;
+    ctx->fuel = (FuelGauge *) 0;
+    ctx->sd   = (SdFat *) 0;
+    ctx->actCnt = 0; /* TODO: should this be reset or not?? */
+
+    /* good night */
+    System.sleep(SLEEP_MODE_DEEP, period);
 }
+
 /*******************************************************************************
   NAME
     accAct - accelerometer activity check
@@ -76,25 +84,25 @@ bool gpsAct(context * ctx, unsigned int threshold)
 
 /*******************************************************************************
   NAME
-    sleepSt - sleep state
+    idleSt - idle state
   DESCRIPTION
-    Function for the sleep state in the main state machine
+    Function for the idle state in the main state machine
 *******************************************************************************/
-void sleepSt(context * ctx)
+void idleSt(context * ctx)
 {
   ctx->nxtState = ctx->thisState;
 
-  if (accAct(ctx, ACTPER_SLEEPST, ACTTHD_SLEEPST))
+  if (accAct(ctx, ACTPER_IDLEST, ACTTHD_IDLEST))
   {
     ctx->actCnt++;
-    if (ctx->actCnt >= CNTTHD_SLEEPST)
+    if (ctx->actCnt >= CNTTHD_IDLEST)
     {
       ctx->nxtState = ALERT1_ST;
       return;
     }
   }
 
-  gotoSleep(ctx, SLPTIM_SLEEPST);
+  gotoSleep(ctx, SLPTIM_IDLEST);
 }
 
 /*******************************************************************************
@@ -130,6 +138,11 @@ void alert1St(context * ctx)
 *******************************************************************************/
 void alert2St(context * ctx)
 {
+  /* Skip this state entirely if indoors (no gps signal) */
+  #ifdef INDOORSDEBUGGING
+    ctx->nxtState = SETUP_ST;
+    return;
+  #endif
   ctx->nxtState = ctx->thisState;
 
   if (gpsAct(ctx, ACTTHD_ALER2ST))
@@ -156,6 +169,15 @@ void alert2St(context * ctx)
 *******************************************************************************/
 void setupSt(context * ctx)
 {
+  // added by me. Should print memory and error out if size is not 512
+  validateMemory(ctx);
+
+  // initialize file system.
+  if (!ctx->sd->begin(SD_CS_PIN, SPI_FULL_SPEED))
+  {
+    ctx->sd->initErrorPrint();
+    fatalBlink();
+  }
 }
 
 /*******************************************************************************
@@ -213,31 +235,32 @@ void resetContext(context * ctx)
 *******************************************************************************/
 void updatePowerProfile(context * ctx)
 {
+  /* TODO: Need a way to test if gps and acc are on or not */
   switch(ctx->nxtState)
   {
-    case(SLEEP_ST):
-      ctx->t->accOn();
-      ctx->t->gpsOff();
+    case(IDLE_ST):
+      //ctx->t->accOn();
+      //ctx->t->gpsOff();
       break;
     case(ALERT1_ST):
       //ctx->t->accOn();
-      ctx->t->gpsOff();
+      //ctx->t->gpsOff();
       break;
     case(ALERT2_ST):
       //ctx->t->accOn();
-      ctx->t->gpsOn();
+      //ctx->t->gpsOn();
       break;
     case(SETUP_ST):
       //ctx->t->accOn();
-      ctx->t->gpsOn();
+      //ctx->t->gpsOn();
       break;
     case(RECORD_ST):
       //ctx->t->accOn();
-      ctx->t->gpsOn();
+      //ctx->t->gpsOn();
       break;
     case(SHUT_ST):
       //ctx->t->accOn();
-      ctx->t->gpsOff();
+      //ctx->t->gpsOff();
       break;
     default:
       /*TODO: print some sort of error message if we end up here */
@@ -255,8 +278,8 @@ void runState(context * ctx)
 {
   switch(ctx->thisState)
   {
-    case(SLEEP_ST):
-      sleepSt(ctx);
+    case(IDLE_ST):
+      idleSt(ctx);
       break;
     case(ALERT1_ST):
       alert1St(ctx);
