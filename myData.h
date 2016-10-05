@@ -28,6 +28,7 @@ struct context_st
   AssetTracker *t;
   FuelGauge    *fuel;
   SdFat        *sd;
+  USBSerial * debug;
 };
 
 typedef struct context_st context;
