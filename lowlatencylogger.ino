@@ -41,6 +41,7 @@ void setup(void)
   thisCtx.t         = &globalTracker;
   thisCtx.fuel      = &fuel;
   thisCtx.sd        = &sd;
+  thisCtx.debug     = &Serial;
 
   pinMode(DEBUG_BUTTON, INPUT);
 
@@ -104,7 +105,13 @@ void setup(void)
 //------------------------------------------------------------------------------
 void loop(void)
 {
+
+
+  runState(&thisCtx);
+  advanceState(&thisCtx);
+
   // discard any input
+  /*
   do
   {
     //delay(1);
@@ -166,6 +173,5 @@ void loop(void)
   {
     Serial.println(F("Invalid entry"));
   }
+  */
 }
-
-//} else if (c == 'r') {
