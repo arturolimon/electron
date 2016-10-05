@@ -507,7 +507,8 @@ char Adafruit_GPS::read2(void) {
     char c = 0;
 
     /* Save how many chars are available at this time instant.
-       We'll be processing that many chars and nothing more. Otherwise we could get stuck here forever. */
+       We'll be processing that many chars and nothing more.
+       Otherwise we could get stuck here forever. */
     unsigned int charAvail = gpsHwSerial->available();
 
     if (paused) return c;
